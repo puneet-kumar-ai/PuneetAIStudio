@@ -1,0 +1,13 @@
+
+.venv/
+.venv_ai/
+__pycache__/
+*.py[cod]
+
+.streamlit/secrets.toml
+.env
+.env.*
+
+.idea/
+.DS_Store
+Thumbs.db
