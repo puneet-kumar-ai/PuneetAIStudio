@@ -458,7 +458,11 @@ def download_ltx_video(video_url):
 
 
 # --- LTX image-to-video workflow ---
-if st.button("🎬 Generate AI Video", key="ltx_generate"):
+if st.button(
+    "🎬 AI video generation temporarily disabled",
+    key="ltx_generate",
+    disabled=True,
+):
     if not ltx_api_key:
         st.error("Please configure your LTX API key first.")
     elif uploaded_image is None:
@@ -482,150 +486,159 @@ if st.session_state.get("ltx_inputs_validated", False):
             "Do not use it until you are ready to submit a real job."
         )
 
-        if st.button("Submit paid LTX job", key="ltx_submit_paid"):
-            import time
-            import requests
-
-            try:
-                st.info("Uploading your image to LTX...")
-
-                image_uri = upload_image_to_ltx(
-                    image_bytes=uploaded_image.getvalue(),
-                    filename=uploaded_image.name,
-                    mime_type=uploaded_image.type or "image/jpeg",
-                    api_key=ltx_api_key,
-                )
-
-                st.info("Submitting your video-generation job...")
-
-                job_id = submit_ltx_video_job(
-                    image_uri=image_uri,
-                    prompt=motion_prompt.strip(),
-                    duration_seconds=ltx_duration,
-                    api_key=ltx_api_key,
-                )
-
-                st.success(f"LTX accepted the job. Job ID: {job_id}")
-
-                progress = st.progress(0)
-                status_message = st.empty()
-                deadline = time.monotonic() + 600
-                completed = False
-
-                for attempt in range(120):
-                    time.sleep(5)
-
-                    job_status = get_ltx_video_status(
-                        job_id=job_id,
-                        api_key=ltx_api_key,
-                    )
-
-                    status = str(
-                        job_status.get("status", "unknown")
-                    ).lower()
-
-                    status_message.info(
-                        f"Video status: {status}. "
-                        "Please keep this page open."
-                    )
-                    progress.progress(min((attempt + 1) / 120, 1.0))
-
-                    if status == "completed":
-                        result = job_status.get("result") or {}
-                        video_url = (
-                            result.get("video_url")
-                            if isinstance(result, dict)
-                            else None
-                        )
-
-                        if not video_url:
-                            video_url = job_status.get("video_url")
-
-                        if not video_url:
-                            st.error(
-                                "The job completed, but the response "
-                                "did not contain a video URL. "
-                                "Please inspect the returned job status."
-                            )
-                            st.json(job_status)
-                            break
-
-                        st.info("Downloading your completed video...")
-
-                        video_bytes = download_ltx_video(video_url)
-
-                        st.success("Your AI video is ready!")
-                        st.video(video_bytes)
-
-                        st.download_button(
-                            "⬇️ Download AI Video",
-                            data=video_bytes,
-                            file_name="puneet_ai_video.mp4",
-                            mime="video/mp4",
-                            key="ltx_download_video",
-                        )
-
-                        completed = True
-                        break
-
-                    if status in ("failed", "error", "cancelled"):
-                        st.error("LTX could not complete the video job.")
-                        st.json(job_status)
-                        break
-
-                    if time.monotonic() >= deadline:
-                        st.warning(
-                            "The wait limit was reached. Your job may "
-                            "still be processing. Check its status before "
-                            "submitting another job."
-                        )
-                        break
-
-                if not completed and time.monotonic() < deadline:
-                    if status not in ("failed", "error", "cancelled", "completed"):
-                        st.info(
-                            "The status checks have ended. "
-                            "Check the job status before retrying."
-                        )
-
-            except requests.HTTPError as error:
-                status_code = (
-                    error.response.status_code
-                    if error.response is not None
-                    else None
-                )
-
-                if status_code == 402:
-                    st.error(
-                        "LTX requires payment or credits. "
-                        "No completed video was returned. "
-                        "Check your billing page before retrying."
-                    )
-                elif status_code == 401:
-                    st.error(
-                        "LTX rejected the API key. Check your saved secret."
-                    )
-                else:
-                    st.error(
-                        f"LTX returned HTTP {status_code}. "
-                        "Review the error before retrying."
-                    )
-
-            except requests.RequestException as error:
-                st.error(f"Network error while contacting LTX: {error}")
-
-            except Exception as error:
-                st.error("Something went wrong in the LTX workflow.")
-                st.code(str(error))
-
 
 # --- Check LTX API access without generating a video ---
-if st.button("🔎 Check LTX API Access", key="ltx_check_api"):
+if st.button(
+    "🔎 LTX API check temporarily disabled",
+    key="ltx_check_api",
+    disabled=True,
+):
     if not ltx_api_key:
         st.error("LTX API key is missing.")
     else:
         try:
             import requests
+
+            st.button(
+                "AI video generation temporarily disabled",
+                key="ltx_submit_paid",
+                disabled=True,
+            )
+            if False:
+                import time
+                import requests
+
+                try:
+                    st.info("Uploading your image to LTX...")
+
+                    image_uri = upload_image_to_ltx(
+                        image_bytes=uploaded_image.getvalue(),
+                        filename=uploaded_image.name,
+                        mime_type=uploaded_image.type or "image/jpeg",
+                        api_key=ltx_api_key,
+                    )
+
+                    st.info("Submitting your video-generation job...")
+
+                    job_id = submit_ltx_video_job(
+                        image_uri=image_uri,
+                        prompt=motion_prompt.strip(),
+                        duration_seconds=ltx_duration,
+                        api_key=ltx_api_key,
+                    )
+
+                    st.success(f"LTX accepted the job. Job ID: {job_id}")
+
+                    progress = st.progress(0)
+                    status_message = st.empty()
+                    deadline = time.monotonic() + 600
+                    completed = False
+
+                    for attempt in range(120):
+                        time.sleep(5)
+
+                        job_status = get_ltx_video_status(
+                            job_id=job_id,
+                            api_key=ltx_api_key,
+                        )
+
+                        status = str(
+                            job_status.get("status", "unknown")
+                        ).lower()
+
+                        status_message.info(
+                            f"Video status: {status}. "
+                            "Please keep this page open."
+                        )
+                        progress.progress(min((attempt + 1) / 120, 1.0))
+
+                        if status == "completed":
+                            result = job_status.get("result") or {}
+                            video_url = (
+                                result.get("video_url")
+                                if isinstance(result, dict)
+                                else None
+                            )
+
+                            if not video_url:
+                                video_url = job_status.get("video_url")
+
+                            if not video_url:
+                                st.error(
+                                    "The job completed, but the response "
+                                    "did not contain a video URL. "
+                                    "Please inspect the returned job status."
+                                )
+                                st.json(job_status)
+                                break
+
+                            st.info("Downloading your completed video...")
+
+                            video_bytes = download_ltx_video(video_url)
+
+                            st.success("Your AI video is ready!")
+                            st.video(video_bytes)
+
+                            st.download_button(
+                                "⬇️ Download AI Video",
+                                data=video_bytes,
+                                file_name="puneet_ai_video.mp4",
+                                mime="video/mp4",
+                                key="ltx_download_video",
+                            )
+
+                            completed = True
+                            break
+
+                        if status in ("failed", "error", "cancelled"):
+                            st.error("LTX could not complete the video job.")
+                            st.json(job_status)
+                            break
+
+                        if time.monotonic() >= deadline:
+                            st.warning(
+                                "The wait limit was reached. Your job may "
+                                "still be processing. Check its status before "
+                                "submitting another job."
+                            )
+                            break
+
+                    if not completed and time.monotonic() < deadline:
+                        if status not in ("failed", "error", "cancelled", "completed"):
+                            st.info(
+                                "The status checks have ended. "
+                                "Check the job status before retrying."
+                            )
+
+                except requests.HTTPError as error:
+                    status_code = (
+                        error.response.status_code
+                        if error.response is not None
+                        else None
+                    )
+
+                    if status_code == 402:
+                        st.error(
+                            "LTX requires payment or credits. "
+                            "No completed video was returned. "
+                            "Check your billing page before retrying."
+                        )
+                    elif status_code == 401:
+                        st.error(
+                            "LTX rejected the API key. Check your saved secret."
+                        )
+                    else:
+                        st.error(
+                            f"LTX returned HTTP {status_code}. "
+                            "Review the error before retrying."
+                        )
+
+                except requests.RequestException as error:
+                    st.error(f"Network error while contacting LTX: {error}")
+
+                except Exception as error:
+                    st.error("Something went wrong in the LTX workflow.")
+                    st.code(str(error))
 
             response = requests.post(
                 "https://api.ltx.io/v1/upload",
