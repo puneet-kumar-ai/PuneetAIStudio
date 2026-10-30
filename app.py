@@ -8,6 +8,8 @@ import tempfile
 import textwrap
 import os
 from pathlib import Path
+# Safety switch: keep LTX API features disabled
+LTX_PUBLIC_ACCESS_ENABLED = False
 
 st.set_page_config(
     page_title="Puneet AI Studio",
@@ -276,20 +278,58 @@ if "planned_scenes" in st.session_state:
             st.markdown("**Narration**")
             st.write(narration)
 
+
             st.markdown("**Visual direction**")
             st.write(
-                "Create a cinematic historical scene illustrating: "
-                + narration
-            )
+                f"""
+                Create a cinematic historical scene based on this narration:
 
+                {narration}
+
+                Show the main subject clearly within a historically accurate
+                environment. Include realistic background details, atmospheric
+                lighting, foreground and background depth, and cinematic
+                composition. Maintain visual continuity with the previous scene.
+                """
+            )
             st.markdown("**Animation direction**")
-            st.write(
-                "Use natural subject movement, subtle camera motion, "
-                "realistic lighting, and historically consistent details. "
-                "Avoid distorted faces, hands, and objects."
-            )
 
+            narration_lower = narration.lower()
 
+            if "walks" in narration_lower or "future" in narration_lower:
+                animation_direction = (
+                    "The young man takes a deep breath, firmly holds his suitcase, "
+                    "and walks forward. The camera follows him from behind as "
+                    "he moves towards the distant horizon."
+                )
+
+            elif (
+                    "begins to move" in narration_lower
+                    or "wheels slowly turn" in narration_lower
+                    or "wave goodbye" in narration_lower
+                    or "disappear into" in narration_lower
+            ):
+                animation_direction = (
+                    "The locomotive gradually moves forward. Its wheels rotate, "
+                    "thick white steam rises and drifts naturally, and passengers "
+                    "wave goodbye. The camera smoothly tracks the departing train."
+                )
+
+            elif "arrives" in narration_lower or "standing on the platform" in narration_lower:
+                animation_direction = (
+                    "The camera slowly tracks the young man entering the railway "
+                    "platform. His clothes move gently as steam drifts through "
+                    "the station. Use subtle cinematic camera movement."
+                )
+
+            else:
+                animation_direction = (
+                    "Use natural subject movement, subtle camera motion, "
+                    "realistic lighting, and historically consistent details. "
+                    "Avoid distorted faces, hands, and objects."
+                )
+
+            st.write(animation_direction)
 
 # --- LTX API connection check ---
 st.divider()
@@ -341,8 +381,9 @@ ltx_duration = st.selectbox(
 
 def upload_image_to_ltx(image_bytes, filename, mime_type, api_key):
     """Upload an image to LTX storage and return its storage URI."""
+    if not LTX_PUBLIC_ACCESS_ENABLED:
+        raise RuntimeError("LTX image uploads are currently disabled.")
     import requests
-
     if not image_bytes:
         raise ValueError("The uploaded image is empty.")
 
@@ -385,6 +426,9 @@ def upload_image_to_ltx(image_bytes, filename, mime_type, api_key):
 
 def submit_ltx_video_job(image_uri, prompt, duration_seconds, api_key):
     """Submit an image-to-video job to LTX and return its job ID."""
+
+    if not LTX_PUBLIC_ACCESS_ENABLED:
+        raise RuntimeError("LTX video generation is currently disabled.")
     import requests
 
     if not image_uri:
@@ -425,11 +469,13 @@ def submit_ltx_video_job(image_uri, prompt, duration_seconds, api_key):
 
     return job_id
 
-
 def get_ltx_video_status(job_id, api_key):
     """Check the status of an existing LTX video job."""
-    import requests
 
+    if not LTX_PUBLIC_ACCESS_ENABLED:
+        raise RuntimeError("LTX video status checks are currently disabled.")
+
+    import requests
     response = requests.get(
         f"https://api.ltx.io/v2/image-to-video/{job_id}",
         headers={"Authorization": f"Bearer {api_key}"},
@@ -442,6 +488,10 @@ def get_ltx_video_status(job_id, api_key):
 
 def download_ltx_video(video_url):
     """Download a completed LTX video and return its bytes."""
+
+    if not LTX_PUBLIC_ACCESS_ENABLED:
+        raise RuntimeError("LTX video downloads are currently disabled.")
+
     import requests
 
     response = requests.get(video_url, timeout=120)
@@ -456,12 +506,11 @@ def download_ltx_video(video_url):
 
 
 
-
 # --- LTX image-to-video workflow ---
 if st.button(
     "🎬 AI video generation temporarily disabled",
     key="ltx_generate",
-    disabled=True,
+        disabled=not LTX_PUBLIC_ACCESS_ENABLED,
 ):
     if not ltx_api_key:
         st.error("Please configure your LTX API key first.")
@@ -491,7 +540,7 @@ if st.session_state.get("ltx_inputs_validated", False):
 if st.button(
     "🔎 LTX API check temporarily disabled",
     key="ltx_check_api",
-    disabled=True,
+    disabled=not LTX_PUBLIC_ACCESS_ENABLED,
 ):
     if not ltx_api_key:
         st.error("LTX API key is missing.")
